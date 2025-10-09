@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Brain Fingerprinting – Training Simulator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- ✅ Tailwind (for dev). For production use CLI/PostCSS build -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="bg-gradient-to-br from-blue-100 to-indigo-200 min-h-screen flex items-center justify-center">
+  <main class="container bg-white p-8 rounded-2xl shadow-xl w-full max-w-2xl">
+    <h1 class="text-2xl font-bold text-center text-indigo-700 mb-6">🧠 Brain Fingerprinting – Training Simulator</h1>
+
+    <!-- Welcome -->
+    <section id="screen-welcome" class="text-center">
+      <p class="mb-6 text-gray-700">
+        During the test, you will see <b>images / words</b>.  
+        Click <span class="text-green-600 font-bold">Familiar</span> if you recognize them,  
+        or <span class="text-red-600 font-bold">Unfamiliar</span> if you don’t.
+      </p>
+      <button id="btnStart" class="px-6 py-3 bg-indigo-600 text-white rounded-lg shadow-md hover:bg-indigo-700 transition">
+        🚀 Start Training
+      </button>
+    </section>
+
+    <!-- Test -->
+    <section id="screen-test" class="hidden flex flex-col items-center">
+      <div class="w-full flex justify-between mb-4 text-gray-600 text-sm">
+        <span id="progress">0 / 0</span>
+        <span id="timer">0 ms</span>
+      </div>
+
+      <!-- Stimulus -->
+      <img id="stimulusImg" alt="stimulus" class="w-56 h-56 object-contain border-4 border-indigo-200 rounded-xl shadow mb-3" />
+      <div id="caption" class="mb-4 text-lg font-medium"></div>
+
+      <!-- Feedback -->
+      <div id="feedback" class="mt-2 text-lg font-bold"></div>
+
+      <!-- Actions -->
+      <div class="flex gap-4">
+        <button id="btnFam" class="px-5 py-3 bg-green-500 text-white rounded-lg shadow hover:bg-green-600">✅ Familiar</button>
+        <button id="btnUnfam" class="px-5 py-3 bg-red-500 text-white rounded-lg shadow hover:bg-red-600">❌ Unfamiliar</button>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="w-full bg-gray-200 h-2 rounded mt-6">
+        <div id="progressBar" class="h-2 bg-indigo-500 rounded transition-all duration-300" style="width: 0%"></div>
+      </div>
+    </section>
+
+    <!-- Result -->
+    <section id="screen-result" class="hidden text-center">
+      <h2 class="text-xl font-bold text-indigo-700 mb-4">📊 Training Results</h2>
+      <div id="summary" class="mb-4 text-gray-700"></div>
+
+      <div class="grid grid-cols-1 gap-4">
+        <canvas id="accuracyChart" class="bg-white rounded-lg p-2 shadow"></canvas>
+        <canvas id="timeChart" class="bg-white rounded-lg p-2 shadow"></canvas>
+      </div>
+
+      <div class="flex justify-center gap-4 mt-6">
+        <button id="btnRestart" class="px-5 py-3 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700">🔄 Restart</button>
+        <button id="btnDownload" class="px-5 py-3 bg-gray-700 text-white rounded-lg shadow hover:bg-gray-800">⬇ Download CSV</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- ✅ Firebase + App (module style only) -->
+  <script type="module" src="firebaseConfig.js"></script>
+  <script type="module" src="saveResponse.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

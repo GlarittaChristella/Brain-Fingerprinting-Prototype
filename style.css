@@ -1,0 +1,114 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, Segoe UI, Roboto, sans-serif;
+  background: linear-gradient(135deg, #e0f7fa, #f1f8e9);
+  color: #111;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.container {
+  max-width: 760px;
+  width: 95%;
+  margin: 32px auto;
+  padding: 24px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+}
+
+h1 {
+  text-align: center;
+  margin: 8px 0 24px;
+  font-size: 1.8rem;
+  background: linear-gradient(90deg, #00796b, #388e3c);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hidden {
+  display: none;
+}
+
+.hud {
+  display: flex;
+  justify-content: space-between;
+  margin: 8px 0 16px;
+  font-weight: 600;
+  color: #00796b;
+}
+
+#stimulusImg {
+  display: block;
+  margin: 12px auto;
+  border: 2px solid #00796b;
+  border-radius: 16px;
+  max-width: 360px;
+  width: 90%;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+#caption {
+  text-align: center;
+  margin: 12px 0 20px;
+  font-size: 1.1rem;
+  color: #444;
+}
+
+.actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+button {
+  padding: 12px 18px;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+}
+
+#btnFam {
+  background: #4caf50;
+  color: #fff;
+}
+#btnFam:hover {
+  background: #388e3c;
+}
+
+#btnUnfam {
+  background: #f44336;
+  color: #fff;
+}
+#btnUnfam:hover {
+  background: #d32f2f;
+}
+
+#btnStart, #btnRestart, #btnDownload {
+  background: #1976d2;
+  color: #fff;
+}
+#btnStart:hover, #btnRestart:hover, #btnDownload:hover {
+  background: #0d47a1;
+}
+
+canvas {
+  max-width: 720px;
+  width: 100%;
+  margin: 16px 0;
+  border-radius: 10px;
+  background: #fafafa;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+  padding: 10px;
+}

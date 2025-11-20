@@ -1,13 +1,52 @@
-// ---------------- IMPORT FIREBASE FUNCTION ----------------
+// ---------------- IMPORT FIREBASE MODULES ----------------
+import { auth, provider, signInWithPopup, onAuthStateChanged } from "./firebaseConfig.js";
 import { saveResponse } from "./saveResponse.js";
+
+// ---------------- LOGIN HANDLING ----------------
+
+// Select login + main screens
+const loginBox = document.querySelector(".absolute"); // login box div
+const welcomeScreen = document.getElementById("screen-welcome");
+const testScreen = document.getElementById("screen-test");
+const resultScreen = document.getElementById("screen-result");
+const googleLoginBtn = document.getElementById("googleLogin");
+// 🔹 Prevent multiple popups
+let isLoggingIn = false;
+
+// 🔹 Google Login
+googleLoginBtn.addEventListener("click", async () => {
+  try {
+    await signInWithPopup(auth, provider);
+    console.log("✅ Login successful");
+  } catch (error) {
+    console.error("❌ Login failed:", error);
+    alert("Login failed. Please try again.");
+  }
+  isLoggingIn = false;
+});
+
+// 🔹 Auth state change — automatically hide/show login box
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    console.log("Logged in as:", user.displayName);
+    loginBox.classList.add("hidden");
+    welcomeScreen.classList.remove("hidden");
+  } else {
+    loginBox.classList.remove("hidden");
+    welcomeScreen.classList.add("hidden");
+    testScreen.classList.add("hidden");
+    resultScreen.classList.add("hidden");
+  }
+});
+
 
 // ---------------- STIMULI LIST ----------------
 const stimuli = [
-  { img: "https://placehold.co/200x200?text=Apple", caption: "Apple", correct: "Familiar" },
-  { img: "https://placehold.co/200x200?text=Spaceship", caption: "Spaceship", correct: "Unfamiliar" },
-  { img: "https://placehold.co/200x200?text=Book", caption: "Book", correct: "Familiar" },
-  { img: "https://placehold.co/200x200?text=Alien", caption: "Alien", correct: "Unfamiliar" },
-  { img: "https://placehold.co/200x200?text=Car", caption: "Car", correct: "Familiar" },
+  { img: "./images/apple.jpg", caption: "Apple", correct: "Familiar", type: "probe" },
+  { img: "./images/spaceship.jpg", caption: "Spaceship", correct: "Unfamiliar", type: "irrelevant" },
+  { img: "./images/book.jpg", caption: "Book", correct: "Familiar", type: "target" },
+  { img: "./images/alien.jpg", caption: "Alien", correct: "Unfamiliar", type: "irrelevant" },
+  { img: "./images/car.jpg", caption: "Car", correct: "Familiar", type: "baseline" },
 ];
 
 // ---------------- VARIABLES ----------------
@@ -16,10 +55,6 @@ let responses = [];
 let startTime = 0;
 
 // ---------------- DOM ELEMENTS ----------------
-const screenWelcome = document.getElementById("screen-welcome");
-const screenTest = document.getElementById("screen-test");
-const screenResult = document.getElementById("screen-result");
-
 const btnStart = document.getElementById("btnStart");
 const btnFam = document.getElementById("btnFam");
 const btnUnfam = document.getElementById("btnUnfam");
@@ -34,18 +69,32 @@ const timerEl = document.getElementById("timer");
 const feedbackEl = document.getElementById("feedback");
 const summary = document.getElementById("summary");
 
-// ---------------- FUNCTIONS ----------------
+// ---------------- HELPER FUNCTIONS ----------------
+function correctedRate(k, n) {
+  return Math.min(Math.max((k + 0.5) / (n + 1), 1e-6), 1 - 1e-6);
+}
 
-// Start Test
+function z(p) {
+  return Math.sqrt(2) * erfInv(2 * p - 1);
+}
+
+function erfInv(x) {
+  let a = 0.147;
+  let ln = Math.log(1 - x * x);
+  let part1 = 2 / (Math.PI * a) + ln / 2;
+  let part2 = ln / a;
+  return Math.sign(x) * Math.sqrt(Math.sqrt(part1 * part1 - part2) - part1);
+}
+
+// ---------------- TEST FLOW ----------------
 btnStart.addEventListener("click", () => {
-  screenWelcome.classList.add("hidden");
-  screenTest.classList.remove("hidden");
+  welcomeScreen.classList.add("hidden");
+  testScreen.classList.remove("hidden");
   currentIndex = 0;
   responses = [];
   loadStimulus();
 });
 
-// Load Stimulus
 function loadStimulus() {
   if (currentIndex >= stimuli.length) {
     endTest();
@@ -61,7 +110,6 @@ function loadStimulus() {
   startTime = Date.now();
 }
 
-// Handle Response
 function handleResponse(choice) {
   const endTime = Date.now();
   const responseTime = endTime - startTime;
@@ -70,32 +118,21 @@ function handleResponse(choice) {
 
   const responseData = {
     stimulus: stim.caption,
+    type: stim.type || "probe",
     correctAnswer: stim.correct,
     userAnswer: choice,
     correct: isCorrect,
     responseTime,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
 
-  // Store locally
   responses.push(responseData);
-
-  // Save to Firebase
   saveResponse(responseData);
 
-  // Feedback
-  if (isCorrect) {
-    feedbackEl.textContent = "✅ Correct!";
-    feedbackEl.className = "correct";
-  } else {
-    feedbackEl.textContent = "❌ Wrong!";
-    feedbackEl.className = "wrong";
-  }
-
-  // Show response time
+  feedbackEl.textContent = isCorrect ? "✅ Correct!" : "❌ Wrong!";
+  feedbackEl.className = isCorrect ? "text-green-600 font-semibold" : "text-red-600 font-semibold";
   timerEl.textContent = `${responseTime} ms`;
 
-  // Next after 1 sec
   setTimeout(() => {
     currentIndex++;
     loadStimulus();
@@ -105,22 +142,47 @@ function handleResponse(choice) {
 btnFam.addEventListener("click", () => handleResponse("Familiar"));
 btnUnfam.addEventListener("click", () => handleResponse("Unfamiliar"));
 
-// End Test
+
+// ---------------- ANALYSIS ----------------
+function analyzeResponses(responses) {
+  const probes = responses.filter(r => r.type === 'probe');
+  const irrels = responses.filter(r => r.type === 'irrelevant');
+
+  const probeFam = probes.filter(p => p.userAnswer === 'Familiar').length;
+  const probeTrials = probes.length;
+  const irrelFam = irrels.filter(i => i.userAnswer === 'Familiar').length;
+  const irrelTrials = irrels.length;
+
+  const hitRate = correctedRate(probeFam, probeTrials);
+  const faRate = correctedRate(irrelFam, irrelTrials);
+  const dprime = z(hitRate) - z(faRate);
+
+  const flagged = dprime > 1.5;
+  return { probeFam, probeTrials, irrelFam, irrelTrials, hitRate, faRate, dprime, flagged };
+}
+
+
+// ---------------- END TEST ----------------
 function endTest() {
-  screenTest.classList.add("hidden");
-  screenResult.classList.remove("hidden");
+  testScreen.classList.add("hidden");
+  resultScreen.classList.remove("hidden");
 
   const correctCount = responses.filter(r => r.correct).length;
   const accuracy = ((correctCount / responses.length) * 100).toFixed(2);
   summary.textContent = `You answered ${correctCount}/${responses.length} correctly. Accuracy: ${accuracy}%`;
 
-  // Destroy previous charts if exist
-  if (window.accuracyChart instanceof Chart) {
-    window.accuracyChart.destroy();
+  const analysis = analyzeResponses(responses);
+  if (analysis.flagged) {
+    const flagEl = document.createElement("p");
+    flagEl.textContent = "🚨 FLAGGED — Manual Review Recommended";
+    flagEl.style.color = "red";
+    flagEl.style.fontWeight = "bold";
+    summary.appendChild(flagEl);
   }
-  if (window.timeChart instanceof Chart) {
-    window.timeChart.destroy();
-  }
+
+  // Clear old charts if they exist
+  if (window.accuracyChart instanceof Chart) window.accuracyChart.destroy();
+  if (window.timeChart instanceof Chart) window.timeChart.destroy();
 
   // Accuracy Chart
   window.accuracyChart = new Chart(document.getElementById("accuracyChart"), {
@@ -129,25 +191,22 @@ function endTest() {
       labels: ["Correct", "Wrong"],
       datasets: [{
         data: [correctCount, responses.length - correctCount],
-        backgroundColor: ["#22c55e", "#ef4444"]
+        backgroundColor: ["#22c55e", "#ef4444"],
       }]
     }
   });
 
-  // ---------------- Average Response Time Chart ----------------
+  // Average Response Time Chart
   const agg = {};
   responses.forEach(r => {
     const key = r.stimulus;
     if (!agg[key]) agg[key] = { count: 0, total: 0 };
-    agg[key].count += 1;
+    agg[key].count++;
     agg[key].total += Number(r.responseTime) || 0;
   });
 
   const avgLabels = Object.keys(agg);
-  const avgValues = avgLabels.map(label => {
-    const item = agg[label];
-    return +(item.total / item.count).toFixed(2);
-  });
+  const avgValues = avgLabels.map(l => +(agg[l].total / agg[l].count).toFixed(2));
 
   window.timeChart = new Chart(document.getElementById("timeChart"), {
     type: "bar",
@@ -156,34 +215,22 @@ function endTest() {
       datasets: [{
         label: "Average Response Time (ms)",
         data: avgValues,
-        backgroundColor: "#3b82f6"
+        backgroundColor: "#3b82f6",
       }]
     },
     options: {
-      scales: {
-        y: { beginAtZero: true }
-      },
-      plugins: {
-        tooltip: {
-          callbacks: {
-            label: (context) => {
-              const value = context.parsed.y;
-              return `Avg: ${value} ms`;
-            }
-          }
-        }
-      }
-    }
+      scales: { y: { beginAtZero: true } },
+    },
   });
 }
 
-// Restart
+
+// ---------------- RESTART & DOWNLOAD ----------------
 btnRestart.addEventListener("click", () => {
-  screenResult.classList.add("hidden");
-  screenWelcome.classList.remove("hidden");
+  resultScreen.classList.add("hidden");
+  welcomeScreen.classList.remove("hidden");
 });
 
-// Download CSV
 btnDownload.addEventListener("click", () => {
   let csv = "Stimulus,Correct Answer,User Answer,Correct?,Response Time(ms)\n";
   responses.forEach(r => {

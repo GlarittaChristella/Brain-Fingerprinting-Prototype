@@ -1,6 +1,6 @@
 // saveResponse.js
 import { db } from "./firebaseConfig.js";
-import { collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { collection, addDoc } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
 
 export const saveResponse = async (responseData) => {
   try {
